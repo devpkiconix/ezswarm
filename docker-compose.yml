@@ -1,0 +1,11 @@
+# Sample docker-compose file
+example:
+    image: ezswarm/ezswarm:0.2
+    cpu_shares: 100
+    mem_limit: "100m"
+    ports:
+        - "80:8080"  # Example
+    environment:
+        - GIT=https://github.com/nodeapps/helloworld.git # GIT URL - can contain username/pass
+        - CHECKOUT=master  # Branch or commit
+        - SCRIPT=bin/server
