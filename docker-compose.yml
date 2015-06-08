@@ -1,6 +1,6 @@
 # Sample docker-compose file
 example:
-    image: ezswarm/ezswarm:0.2
+    image: ezswarm/ezswarm:0.4
     cpu_shares: 100
     mem_limit: "100m"
     ports:

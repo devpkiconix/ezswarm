@@ -1,53 +1,72 @@
+var fs = require("fs");
+var Q = require("q");
 var clone = require('git-clone');
 var BAD_ENV = new Error("Problem in environment")
+var RUN_SCRIPT = "/usr/src/app/run.js";
 
-function nop(err){}
+function qCheckCloneNeeded(){
+    var deferred = Q.defer();
+    fs.exists(RUN_SCRIPT, function(exists) {
+	deferred.resolve(! exists); // clone needed if the file does not exist
+    });
+    return deferred.promise;
+}
 
-function bootstrap(cb) {
+function qFetchGit(){
     var repoUrl = process.env.GIT;
     var checkout = process.env.CHECKOUT;
     var script = process.env.SCRIPT;
-
-    if (!cb) {
-	cb = nop;
-    }
-
     if (! (repoUrl && checkout && script) ) {
-	cb(BAD_ENV);
-	return;
+	return Q.reject(BAD_ENV);
     }
+    var deferred = Q.defer();
     var targetPath = "/usr/src/app/realapp";
     clone(repoUrl, targetPath, {git: '/usr/bin/git', checkout: checkout}, function(err){
 	if (err) {
-	    console.log(err);
-	    return cb(err);
+	    return deferred.reject(err);
 	}
-	var fs = require("fs");
-
-	var code = "require('./realapp/" + script + "')";
-
-	fs.writeFile("/usr/src/app/run.js", code, function(err){
-	    if (err) {
-		console.log("Unable to write run.js. ", err);
-		return cb(err);
-	    }
-
-	    console.log("Done writing run.js. ", code);
-	    fs.readdir(targetPath, function(err, files){
-		if (err) {
-		    console.log(err);
-		    return cb(err);
-		}
-		try {
-		    require("./run")
-		}catch(err2) {
-		    console.log(err2);
-		    return cb(err2);
-		}
-		cb(null);
-	    });
-	});
+	deferred.resolve();
     });
+    return deferred.promise;
+}
+
+function qGenRunScript(){
+    var deferred = Q.defer();
+    var code = "require('./realapp/" + process.env.SCRIPT + "')";
+
+    fs.writeFile(RUN_SCRIPT, code, function(err){
+	if (err) {
+	    return deferred.reject(err);
+	}
+	deferred.resolve();
+    });
+    return deferred.promise;
+}
+
+function qExecRunScript(){
+    var deferred = Q.defer();
+    try {
+	require("./run")
+	deferred.resolve();
+    }catch(err2) {
+	console.log(err2);
+	deferred.reject(err);
+    }
+    return deferred.promise;
+}
+
+function bootstrap(){
+    return qCheckCloneNeeded()
+	.then(function(cloneNeeded){
+	    if (cloneNeeded){
+		return qFetchGit().then(qGenRunScript);
+	    }
+	})
+    	.then(qExecRunScript)
+        .fail(function(err){
+	    console.error(err);
+	    process.exit(1);
+	});
 }
 
 bootstrap()
