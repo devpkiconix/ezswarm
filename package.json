@@ -1,0 +1,11 @@
+{
+  "name": "docker-node-bootstrap",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node bootstrap.js"
+  },
+  "dependencies": {
+    "git-clone": "^0.1.0"
+  }
+}
