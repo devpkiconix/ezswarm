@@ -1,14 +1,15 @@
-FROM node:0.10-onbuild
+FROM node:0.10
 
 RUN apt-get install -y git
 
-RUN mkdir -p /usr/src/app/realapp
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
 
-#RUN mkdir -p /usr/src/app/bootstrap
-#WORKDIR /usr/src/app/bootstrap
+COPY . /usr/src/app
 
 EXPOSE 3000
 EXPOSE 8443
 EXPOSE 23124
 
-CMD [ "npm", "start" ]
+RUN chmod +x /usr/src/app/bootstrap.sh
+CMD ["/bin/bash", "./bootstrap.sh"]
